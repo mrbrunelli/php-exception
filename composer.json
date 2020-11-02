@@ -1,0 +1,19 @@
+{
+    "name": "root/html",
+    "description": "Aula Exception",
+    "authors": [
+        {
+            "name": "Matheus R. Brunelli",
+            "email": "matheus.brunelli@gmail.com"
+        }
+    ],
+    "require": {
+        "symfony/dotenv": "^5.1",
+        "slim/slim": "^4.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Alfa\\": "src/"
+        }
+    }
+}
