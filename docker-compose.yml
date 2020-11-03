@@ -11,14 +11,18 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    network_mode: "host"
+    command: bash -c "php -S localhost:8080 -t public/"
+
   mysql:
-        image: mysql:5.7 
-        container_name: mysql
-        restart: always 
-        volumes:
-            - /var/lib/mysql
-        ports:
-            - "3306:3306" 
-        environment:
-            - MYSQL_DATABASE=alfa
-            - MYSQL_ROOT_PASSWORD=root
+    image: mysql:5.7
+    container_name: mysql
+    restart: always
+    volumes:
+      - /var/lib/mysql
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_DATABASE=alfa
+      - MYSQL_ROOT_PASSWORD=root
+    network_mode: "host"
