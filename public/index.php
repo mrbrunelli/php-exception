@@ -5,11 +5,14 @@ declare(strict_types=1);
 use Alfa\Banco\Conexao;
 use Alfa\Banco\Exception\SintaxeErroException;
 use Alfa\Banco\Exception\TabelaInexistenteException;
+use Alfa\Banco\Exception\CheckConstraintException;
+use Alfa\Banco\Exception\UniqueConstraintException;
 use Alfa\Entidade\Produto;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Factory\AppFactory;
 use Symfony\Component\Dotenv\Dotenv;
+use Alfa\Helper\HttpResponseErrorSerializer;
 
 require_once '../vendor/autoload.php';
 
@@ -26,13 +29,13 @@ $app->get('/', function (Request $request, Response $response) {
   return $response;
 });
 
-$app->get('/message[/{nome}]', function (Request $request, Response $response, $args) {
-  $name = $args['name'] ?? "Anonymous";
-  $response->getBody()->write("Hello $name");
+$app->get('/mensagem[/{nome}]', function (Request $request, Response $response, $args) {
+  $nome = $args['nome'] ?? "Anonymous";
+  $response->getBody()->write("Hello $nome");
   return $response;
 });
 
-$app->post('/products', function (Request $request, Response $response) use ($conexao) {
+$app->post('/produtos', function (Request $request, Response $response) use ($conexao) {
   try {
     $produto = json_decode($request->getBody()->getContents());
     $stmt = $conexao->prepare("insert into produto (descricao, valor) values (?, ?)");
@@ -49,19 +52,19 @@ $app->post('/products', function (Request $request, Response $response) use ($co
     return $response
       ->withHeader('Content-Type', 'application/json')
       ->withStatus(201);
-  } catch (PDOException $e) {
-    $response->getBody()->write(
-      json_encode([
-        'error' => $e->getMessage()
-      ])
-    );
-    return $response
-      ->withHeader('Content-Type', 'application/json')
-      ->withStatus(500);
+  } catch (CheckConstraintException $e) {
+    return (new HttpResponseErrorSerializer($response, $e->getPersonalizedMessage(), 400))
+      ->getSerializedResponse();
+  } catch (UniqueConstraintException $e) {
+    return (new HttpResponseErrorSerializer($response, $e->getPersonalizedMessage(), 400))
+      ->getSerializedResponse();
+  } catch (Exception $e) {
+    return (new HttpResponseErrorSerializer($response, $e->getMessage(), 500))
+      ->getSerializedResponse();
   }
 });
 
-$app->get('/products', function (Request $request, Response $response) use ($conexao) {
+$app->get('/produtos', function (Request $request, Response $response) use ($conexao) {
   try {
     $stmtConsulta = $conexao->prepare("select * from produto");
     $stmtConsulta->setFetchMode(PDO::FETCH_CLASS, Produto::class);
@@ -71,18 +74,12 @@ $app->get('/products', function (Request $request, Response $response) use ($con
       ->withHeader('Content-Type', 'application/json')
       ->withStatus(200);
   } catch (PDOException $e) {
-    $response->getBody()->write(
-      json_encode([
-        'error' => $e->getMessage()
-      ])
-    );
-    return $response
-      ->withHeader('Content-Type', 'application/json')
-      ->withStatus(500);
+    return (new HttpResponseErrorSerializer($response, $e->getMessage(), 500))
+      ->getSerializedResponse();
   }
 });
 
-$app->get('/products/{id}', function (Request $request, Response $response, $args) use ($conexao) {
+$app->get('/produtos/{id}', function (Request $request, Response $response, $args) use ($conexao) {
   try {
     $stmtConsulta = $conexao->prepare("select * from produto where id = ?");
     $stmtConsulta->bindParam(1, $args['id']);
@@ -98,14 +95,8 @@ $app->get('/products/{id}', function (Request $request, Response $response, $arg
       ->withHeader('Content-Type', 'application/json')
       ->withStatus(200);
   } catch (PDOException $e) {
-    $response->getBody()->write(
-      json_encode([
-        'error' => $e->getMessage()
-      ])
-    );
-    return $response
-      ->withHeader('Content-Type', 'application/json')
-      ->withStatus(500);
+    return (new HttpResponseErrorSerializer($response, $e->getMessage(), 500))
+      ->getSerializedResponse();
   }
 });
 

@@ -3,7 +3,7 @@ version: "3.1"
 services:
   php:
     build:
-      context: ./docker/php
+      context: ./.docker/php
       dockerfile: Dockerfile
     container_name: php
     volumes:
@@ -11,11 +11,11 @@ services:
     ports:
       - "80:80"
       - "443:443"
-    network_mode: "host"
+    network_mode: host
     command: bash -c "php -S localhost:8080 -t public/"
 
   mysql:
-    image: mysql:5.7
+    image: mysql:8.0
     container_name: mysql
     restart: always
     volumes:
@@ -25,4 +25,4 @@ services:
     environment:
       - MYSQL_DATABASE=alfa
       - MYSQL_ROOT_PASSWORD=root
-    network_mode: "host"
+    network_mode: host
