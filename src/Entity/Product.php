@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Alfa\Entidade;
+namespace Alfa\Entity;
 
-class Produto
+class Product
 {
   public $id;
   public $descricao;

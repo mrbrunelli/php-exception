@@ -8,6 +8,9 @@ use Alfa\Banco\Exception\TabelaInexistenteException;
 use Alfa\Banco\Exception\CheckConstraintException;
 use Alfa\Banco\Exception\UniqueConstraintException;
 use Alfa\Entidade\Produto;
+use Alfa\Handler\CreateProduct;
+use Alfa\Handler\GetAllProducts;
+use Alfa\Handler\GetProduct;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Factory\AppFactory;
@@ -27,32 +30,6 @@ $conexao = new Conexao();
 $app = AppFactory::create();
 
 $app->addErrorMiddleware(true, true, true);
-
-/*$app->add(function (Request $request, RequestHandlerInterface $handler) {
-  $response = $handler->handle($request);
-  $content = (string) $response->getBody();
-  $responseCustom = new Psr7Response();
-  $responseCustom->getBody()->write("Antes ". $content);
-  return $responseCustom;
-});*/
-
-/*$app->add(function (Request $request, RequestHandlerInterface $handler) {
-  $inicio = microtime(true);
-  $response = $handler->handle($request);
-  $fim = microtime(true);
-  file_put_contents(
-    "../data/log/access_log",
-    sprintf(
-      "%s [%s] %s %ss\n",
-      date("d/m/Y H:i:s"),
-      $request->getMethod(),
-      $request->getUri(),
-      round($fim-$inicio, 2)
-    ),
-      FILE_APPEND
-  );
-  return $response;
-});*/
 
 $auth = function (Request $request, RequestHandlerInterface $handler) {
   if (!isset($request->getHeaders()['Authorization'])) {
@@ -120,76 +97,9 @@ $app->get('/mensagem[/{nome}]', function (Request $request, Response $response, 
 });
 
 $app->group('/produtos', function (RouteCollectorProxy $group) use ($conexao, $cacheProduto) {
-  $group->post('', function (Request $request, Response $response) use ($conexao) {
-    try {
-      $produto = json_decode($request->getBody()->getContents());
-      $stmt = $conexao->prepare("insert into produto (descricao, valor) values (?, ?)");
-      $stmt->bindParam(1, $produto->descricao);
-      $stmt->bindParam(2, $produto->valor);
-      $stmt->execute();
-      $idProduto = $conexao->lastInsertId();
-      $stmtConsulta = $conexao->prepare("select * from produto where id = ?");
-      $stmtConsulta->bindParam(1, $idProduto);
-      $stmtConsulta->setFetchMode(PDO::FETCH_CLASS, Produto::class);
-      $stmtConsulta->execute();
-      $produtoConsulta = $stmtConsulta->fetch();
-      $response->getBody()->write(json_encode($produtoConsulta));
-      return $response
-        ->withHeader('Content-Type', 'application/json')
-        ->withStatus(201);
-    } catch (CheckConstraintException $e) {
-      return (new HttpResponseErrorSerializer($response, $e->getPersonalizedMessage(), 400))
-        ->getSerializedResponse();
-    } catch (UniqueConstraintException $e) {
-      return (new HttpResponseErrorSerializer($response, $e->getPersonalizedMessage(), 400))
-        ->getSerializedResponse();
-    } catch (Exception $e) {
-      return (new HttpResponseErrorSerializer($response, $e->getMessage(), 500))
-        ->getSerializedResponse();
-    }
-  });
-  
-  $group->get('', function (Request $request, Response $response) use ($conexao) {
-    try {
-      if ($request->getAttribute("cache")) {
-        $response->getBody()->write($request->getAttribute("cache"));
-        return $response
-        ->withHeader('Content-Type', 'application/json')
-        ->withStatus(200);
-      }
-      $stmtConsulta = $conexao->prepare("select * from produto");
-      $stmtConsulta->setFetchMode(PDO::FETCH_CLASS, Produto::class);
-      $stmtConsulta->execute();
-      $response->getBody()->write(json_encode($stmtConsulta->fetchAll()));
-      return $response
-        ->withHeader('Content-Type', 'application/json')
-        ->withStatus(200);
-    } catch (PDOException $e) {
-      return (new HttpResponseErrorSerializer($response, $e->getMessage(), 500))
-        ->getSerializedResponse();
-    }
-  })->add($cacheProduto);
-  
-  $group->get('/{id}', function (Request $request, Response $response, $args) use ($conexao) {
-    try {
-      $stmtConsulta = $conexao->prepare("select * from produto where id = ?");
-      $stmtConsulta->bindParam(1, $args['id']);
-      $stmtConsulta->setFetchMode(PDO::FETCH_CLASS, Produto::class);
-      $stmtConsulta->execute();
-      $produto = $stmtConsulta->fetch();
-      if (!$produto) {
-        return $response
-          ->withStatus(204);
-      }
-      $response->getBody()->write(json_encode($produto));
-      return $response
-        ->withHeader('Content-Type', 'application/json')
-        ->withStatus(200);
-    } catch (PDOException $e) {
-      return (new HttpResponseErrorSerializer($response, $e->getMessage(), 500))
-        ->getSerializedResponse();
-    }
-  });
-})->add($auth);
+  $group->post('', CreateProduct::class);
+  $group->get('/{idproduto}', GetProduct::class);
+  $group->get('', GetAllProducts::class);
+});
 
 $app->run();
