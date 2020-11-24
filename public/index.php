@@ -3,11 +3,6 @@
 declare(strict_types=1);
 
 use Alfa\Banco\Conexao;
-use Alfa\Banco\Exception\SintaxeErroException;
-use Alfa\Banco\Exception\TabelaInexistenteException;
-use Alfa\Banco\Exception\CheckConstraintException;
-use Alfa\Banco\Exception\UniqueConstraintException;
-use Alfa\Entidade\Produto;
 use Alfa\Handler\CreateProduct;
 use Alfa\Handler\GetAllProducts;
 use Alfa\Handler\GetProduct;
@@ -15,7 +10,6 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Factory\AppFactory;
 use Symfony\Component\Dotenv\Dotenv;
-use Alfa\Helper\HttpResponseErrorSerializer;
 use Fig\Http\Message\StatusCodeInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Slim\Psr7\Response as Psr7Response;
